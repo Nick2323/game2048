@@ -2,13 +2,14 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: #faf8ef;
-  color:#1880a2;
+  background: #171A21;
+  color: #1880a2;
   font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
   font-size: 18px; }
 
 body {
-  margin: 80px 0; }
+  margin: 40px 0;
+  padding-top: 20px; }
 
 .heading:after {
   content: "";
@@ -90,7 +91,7 @@ h1.title {
     animation-fill-mode: both; }
 
 .score-container:after {
-  content: "Your balsns"; }
+  content: "Score"; }
 
 .best-container:after {
   content: "Best"; }
@@ -519,10 +520,42 @@ hr {
   line-height: 42px;
   margin-bottom: 0; }
 
+/* Timer Styles */
+.timer-container {
+  float: left;
+  background: #262D39;
+  border-radius: 6px;
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px; }
+
+.timer-label {
+  color: #8a8a8a;
+  font-size: 14px;
+  text-transform: uppercase; }
+
+.timer {
+  color: #00AEFF;
+  font-size: 24px;
+  font-weight: bold;
+  min-width: 50px; }
+
+.timer.warning {
+  color: #F4AE34; }
+
+.timer.danger {
+  color: #EB0159;
+  animation: pulse 0.5s ease-in-out infinite; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; } }
+
 .restart-button {
   display: inline-block;
-  background: #8f7a66;
-  border-radius: 3px;
+  background: #1880A2;
+  border-radius: 6px;
   padding: 0 20px;
   text-decoration: none;
   color: #f9f6f2;
@@ -531,6 +564,9 @@ hr {
   display: block;
   text-align: center;
   float: right; }
+
+.restart-button:hover {
+  background: #00AEFF; }
 
 .game-explanation {
   margin-top: 50px; }

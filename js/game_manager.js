@@ -5,6 +5,9 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
   this.actuator       = new Actuator;
 
   this.startTiles     = 2;
+  this.gameTime       = 60; // 1 minute in seconds
+  this.timeLeft       = this.gameTime;
+  this.timerInterval  = null;
 
   this.inputManager.on("move", this.move.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
@@ -15,6 +18,7 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
 
 // Restart the game
 GameManager.prototype.restart = function () {
+  this.stopTimer();
   this.storageManager.clearGameState();
   this.actuator.continueGame(); // Clear the game won/lost message
   this.setup();
@@ -44,6 +48,7 @@ GameManager.prototype.setup = function () {
     this.won         = previousState.won;
     this.keepPlaying = previousState.keepPlaying;
     this.moves       = previousState.moves || 0;
+    this.timeLeft    = previousState.timeLeft || this.gameTime;
   } else {
     this.grid        = new Grid(this.size);
     this.score       = 0;
@@ -51,12 +56,76 @@ GameManager.prototype.setup = function () {
     this.won         = false;
     this.keepPlaying = false;
     this.moves       = 0;
+    this.timeLeft    = this.gameTime;
 
     // Add the initial tiles
     this.addStartTiles();
   }
 
+  // Start the timer
+  this.startTimer();
+
   // Update the actuator
+  this.actuate();
+};
+
+// Timer functions
+GameManager.prototype.startTimer = function () {
+  var self = this;
+
+  // Clear any existing timer
+  this.stopTimer();
+
+  // Don't start timer if game is already over
+  if (this.over) {
+    this.updateTimerDisplay();
+    return;
+  }
+
+  this.updateTimerDisplay();
+
+  this.timerInterval = setInterval(function() {
+    self.timeLeft--;
+    self.updateTimerDisplay();
+
+    // Save state with updated time
+    if (!self.over) {
+      self.storageManager.setGameState(self.serialize());
+    }
+
+    if (self.timeLeft <= 0) {
+      self.timeUp();
+    }
+  }, 1000);
+};
+
+GameManager.prototype.stopTimer = function () {
+  if (this.timerInterval) {
+    clearInterval(this.timerInterval);
+    this.timerInterval = null;
+  }
+};
+
+GameManager.prototype.updateTimerDisplay = function () {
+  var timerElement = document.getElementById('timer');
+  if (!timerElement) return;
+
+  var minutes = Math.floor(this.timeLeft / 60);
+  var seconds = this.timeLeft % 60;
+  timerElement.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+
+  // Update timer color based on time left
+  timerElement.classList.remove('warning', 'danger');
+  if (this.timeLeft <= 10) {
+    timerElement.classList.add('danger');
+  } else if (this.timeLeft <= 30) {
+    timerElement.classList.add('warning');
+  }
+};
+
+GameManager.prototype.timeUp = function () {
+  this.stopTimer();
+  this.over = true;
   this.actuate();
 };
 
@@ -112,6 +181,7 @@ GameManager.prototype.actuate = function () {
 
   // Clear the state when the game is over (game over only, not win)
   if (this.over) {
+    this.stopTimer();
     this.storageManager.clearGameState();
     // Save result to server when game is over
     this.saveResultToServer();
@@ -137,7 +207,8 @@ GameManager.prototype.serialize = function () {
     over:        this.over,
     won:         this.won,
     keepPlaying: this.keepPlaying,
-    moves:       this.moves
+    moves:       this.moves,
+    timeLeft:    this.timeLeft
   };
 };
 
