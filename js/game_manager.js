@@ -8,6 +8,7 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
   this.gameTime       = 60; // 1 minute in seconds
   this.timeLeft       = this.gameTime;
   this.timerInterval  = null;
+  this.resultSaved    = false; // Track if result was saved
 
   this.inputManager.on("move", this.move.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
@@ -35,12 +36,20 @@ GameManager.prototype.isGameTerminated = function () {
   return this.over || (this.won && !this.keepPlaying);
 };
 
+// Check if user is logged in
+GameManager.prototype.isUserLoggedIn = function () {
+  return typeof GameAPI !== 'undefined' && GameAPI.isLoggedIn();
+};
+
 // Set up the game
 GameManager.prototype.setup = function () {
   var previousState = this.storageManager.getGameState();
 
+  // Reset result saved flag
+  this.resultSaved = false;
+
   // Reload the game from a previous game if present
-  if (previousState) {
+  if (previousState && this.isUserLoggedIn()) {
     this.grid        = new Grid(previousState.grid.size,
                                 previousState.grid.cells); // Reload grid
     this.score       = previousState.score;
@@ -62,8 +71,12 @@ GameManager.prototype.setup = function () {
     this.addStartTiles();
   }
 
-  // Start the timer
-  this.startTimer();
+  // Start the timer only if user is logged in
+  if (this.isUserLoggedIn()) {
+    this.startTimer();
+  } else {
+    this.updateTimerDisplay();
+  }
 
   // Update the actuator
   this.actuate();
@@ -142,18 +155,32 @@ GameManager.prototype.getMaxTile = function () {
 
 // Save result to server
 GameManager.prototype.saveResultToServer = function () {
-  if (typeof GameAPI !== 'undefined' && GameAPI.isLoggedIn()) {
-    var maxTile = this.getMaxTile();
-    GameAPI.saveResult(this.score, maxTile, this.moves, this.won)
-      .then(function() {
-        console.log('Result saved to server');
-        GameAPI.loadLeaderboard();
-        GameAPI.loadDailyBest();
-      })
-      .catch(function(error) {
-        console.error('Failed to save result:', error);
-      });
+  var self = this;
+
+  // Don't save if already saved or not logged in
+  if (this.resultSaved) {
+    console.log('Result already saved');
+    return;
   }
+
+  if (!this.isUserLoggedIn()) {
+    console.log('User not logged in, cannot save result');
+    return;
+  }
+
+  var maxTile = this.getMaxTile();
+  console.log('Saving result:', { score: this.score, maxTile: maxTile, moves: this.moves, won: this.won });
+
+  GameAPI.saveResult(this.score, maxTile, this.moves, this.won)
+    .then(function() {
+      self.resultSaved = true;
+      console.log('Result saved to server successfully');
+      GameAPI.loadLeaderboard();
+      GameAPI.loadDailyBest();
+    })
+    .catch(function(error) {
+      console.error('Failed to save result:', error);
+    });
 };
 
 // Set up the initial tiles to start the game with
@@ -233,6 +260,9 @@ GameManager.prototype.moveTile = function (tile, cell) {
 GameManager.prototype.move = function (direction) {
   // 0: up, 1: right, 2: down, 3: left
   var self = this;
+
+  // Don't allow moves if user is not logged in
+  if (!this.isUserLoggedIn()) return;
 
   if (this.isGameTerminated()) return; // Don't do anything if the game's over
 
