@@ -1,1 +1,7 @@
 .sass-cache/
+node_modules/
+server/node_modules/
+server/*.db
+server/game2048.db
+.DS_Store
+*.log
