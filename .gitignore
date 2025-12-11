@@ -1,1 +1,4 @@
 .sass-cache/
+node_modules/
+server/*.db
+server/game2048.db

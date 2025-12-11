@@ -43,19 +43,45 @@ GameManager.prototype.setup = function () {
     this.over        = previousState.over;
     this.won         = previousState.won;
     this.keepPlaying = previousState.keepPlaying;
+    this.moves       = previousState.moves || 0;
   } else {
     this.grid        = new Grid(this.size);
     this.score       = 0;
     this.over        = false;
     this.won         = false;
     this.keepPlaying = false;
-
-    // Add the initial tiles
-    this.addStartTiles();
+    this.moves       = 0;
   }
 
   // Update the actuator
   this.actuate();
+};
+
+// Get the maximum tile value on the grid
+GameManager.prototype.getMaxTile = function () {
+  var maxTile = 0;
+  this.grid.eachCell(function (x, y, tile) {
+    if (tile && tile.value > maxTile) {
+      maxTile = tile.value;
+    }
+  });
+  return maxTile;
+};
+
+// Save result to server
+GameManager.prototype.saveResultToServer = function () {
+  if (typeof GameAPI !== 'undefined' && GameAPI.isLoggedIn()) {
+    var maxTile = this.getMaxTile();
+    GameAPI.saveResult(this.score, maxTile, this.moves, this.won)
+      .then(function() {
+        console.log('Result saved to server');
+        GameAPI.loadLeaderboard();
+        GameAPI.loadDailyBest();
+      })
+      .catch(function(error) {
+        console.error('Failed to save result:', error);
+      });
+  }
 };
 
 // Set up the initial tiles to start the game with
@@ -84,6 +110,8 @@ GameManager.prototype.actuate = function () {
   // Clear the state when the game is over (game over only, not win)
   if (this.over) {
     this.storageManager.clearGameState();
+    // Save result to server when game is over
+    this.saveResultToServer();
   } else {
     this.storageManager.setGameState(this.serialize());
   }
@@ -105,7 +133,8 @@ GameManager.prototype.serialize = function () {
     score:       this.score,
     over:        this.over,
     won:         this.won,
-    keepPlaying: this.keepPlaying
+    keepPlaying: this.keepPlaying,
+    moves:       this.moves
   };
 };
 
@@ -180,6 +209,7 @@ GameManager.prototype.move = function (direction) {
   });
 
   if (moved) {
+    this.moves++; // Increment move counter
     this.addRandomTile();
 
     if (!this.movesAvailable()) {
