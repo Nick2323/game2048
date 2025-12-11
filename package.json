@@ -1,0 +1,15 @@
+{
+  "name": "game2048",
+  "version": "1.0.0",
+  "description": "2048 Game with leaderboard and timer",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "install-server": "cd server && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["2048", "game"],
+  "license": "MIT"
+}
