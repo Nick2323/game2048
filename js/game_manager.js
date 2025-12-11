@@ -51,6 +51,9 @@ GameManager.prototype.setup = function () {
     this.won         = false;
     this.keepPlaying = false;
     this.moves       = 0;
+
+    // Add the initial tiles
+    this.addStartTiles();
   }
 
   // Update the actuator
