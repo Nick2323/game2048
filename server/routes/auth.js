@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../db');
+const { prepare } = require('../db');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'game2048-secret-key-change-in-production';
@@ -20,14 +20,14 @@ router.post('/register', (req, res) => {
     }
 
     // Check if user exists
-    const existingUser = db.prepare('SELECT id FROM users WHERE username = ? OR email = ?').get(username, email);
+    const existingUser = prepare('SELECT id FROM users WHERE username = ? OR email = ?').get(username, email);
     if (existingUser) {
       return res.status(400).json({ error: 'Username or email already exists' });
     }
 
     // Hash password and create user
     const password_hash = bcrypt.hashSync(password, 10);
-    const result = db.prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)').run(username, email, password_hash);
+    const result = prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)').run(username, email, password_hash);
 
     // Generate token
     const token = jwt.sign({ userId: result.lastInsertRowid, username }, JWT_SECRET, { expiresIn: '7d' });
@@ -53,7 +53,7 @@ router.post('/login', (req, res) => {
     }
 
     // Find user
-    const user = db.prepare('SELECT * FROM users WHERE username = ? OR email = ?').get(username, username);
+    const user = prepare('SELECT * FROM users WHERE username = ? OR email = ?').get(username, username);
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -87,7 +87,7 @@ router.get('/me', (req, res) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = db.prepare('SELECT id, username, email, created_at FROM users WHERE id = ?').get(decoded.userId);
+    const user = prepare('SELECT id, username, email, created_at FROM users WHERE id = ?').get(decoded.userId);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

@@ -1,9 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-
-const authRoutes = require('./routes/auth');
-const gameRoutes = require('./routes/game');
+const { initDatabase } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,10 +13,6 @@ app.use(express.json());
 // Serve static files from parent directory
 app.use(express.static(path.join(__dirname, '..')));
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/game', gameRoutes);
-
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -29,9 +23,21 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`
+// Initialize database and start server
+async function startServer() {
+  try {
+    await initDatabase();
+    console.log('Database initialized');
+
+    // Load routes after database is ready
+    const authRoutes = require('./routes/auth');
+    const gameRoutes = require('./routes/game');
+
+    app.use('/api/auth', authRoutes);
+    app.use('/api/game', gameRoutes);
+
+    app.listen(PORT, () => {
+      console.log(`
   ╔═══════════════════════════════════════════╗
   ║       2048 Game Server is running!        ║
   ╠═══════════════════════════════════════════╣
@@ -47,5 +53,12 @@ app.listen(PORT, () => {
   - GET  /api/game/leaderboard - Global leaderboard
   - GET  /api/game/daily-best  - Today's best scores
   - GET  /api/game/stats       - Statistics
-  `);
-});
+      `);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

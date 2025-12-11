@@ -1,6 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const db = require('../db');
+const { prepare } = require('../db');
 const { JWT_SECRET } = require('./auth');
 
 const router = express.Router();
@@ -30,7 +30,7 @@ router.post('/results', authMiddleware, (req, res) => {
       return res.status(400).json({ error: 'Score is required' });
     }
 
-    const result = db.prepare(`
+    const result = prepare(`
       INSERT INTO game_results (user_id, score, max_tile, moves, won)
       VALUES (?, ?, ?, ?, ?)
     `).run(req.userId, score, maxTile || 0, moves || 0, won ? 1 : 0);
@@ -48,7 +48,7 @@ router.post('/results', authMiddleware, (req, res) => {
 // Get user's game history
 router.get('/my-results', authMiddleware, (req, res) => {
   try {
-    const results = db.prepare(`
+    const results = prepare(`
       SELECT id, score, max_tile, moves, won, played_at
       FROM game_results
       WHERE user_id = ?
@@ -56,7 +56,7 @@ router.get('/my-results', authMiddleware, (req, res) => {
       LIMIT 50
     `).all(req.userId);
 
-    const stats = db.prepare(`
+    const stats = prepare(`
       SELECT
         COUNT(*) as total_games,
         MAX(score) as best_score,
@@ -78,7 +78,7 @@ router.get('/leaderboard', (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
 
-    const leaderboard = db.prepare(`
+    const leaderboard = prepare(`
       SELECT
         u.username,
         gr.score,
@@ -102,7 +102,7 @@ router.get('/daily-best', (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    const dailyBest = db.prepare(`
+    const dailyBest = prepare(`
       SELECT
         u.username,
         gr.score,
@@ -134,7 +134,7 @@ router.get('/stats', (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
 
-    const dailyStats = db.prepare(`
+    const dailyStats = prepare(`
       SELECT
         date(played_at) as date,
         COUNT(*) as games_played,
@@ -147,25 +147,7 @@ router.get('/stats', (req, res) => {
       ORDER BY date DESC
     `).all(`-${days} days`);
 
-    // Daily winners
-    const dailyWinners = db.prepare(`
-      SELECT
-        date(gr.played_at) as date,
-        u.username,
-        gr.score
-      FROM game_results gr
-      JOIN users u ON gr.user_id = u.id
-      WHERE gr.played_at >= datetime('now', ?)
-      AND gr.score = (
-        SELECT MAX(score)
-        FROM game_results
-        WHERE date(played_at) = date(gr.played_at)
-      )
-      GROUP BY date(gr.played_at)
-      ORDER BY date DESC
-    `).all(`-${days} days`);
-
-    res.json({ dailyStats, dailyWinners });
+    res.json({ dailyStats });
   } catch (error) {
     console.error('Stats error:', error);
     res.status(500).json({ error: 'Server error' });
