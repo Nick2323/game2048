@@ -20,7 +20,11 @@ const GameAPI = {
     this.user = user;
     localStorage.setItem('game2048_token', token);
     localStorage.setItem('game2048_user', JSON.stringify(user));
+    // Clear game state so a new game starts for the new user
+    localStorage.removeItem('gameState');
     this.updateUI();
+    // Reload page to start a fresh game
+    window.location.reload();
   },
 
   // Clear auth
@@ -29,7 +33,11 @@ const GameAPI = {
     this.user = null;
     localStorage.removeItem('game2048_token');
     localStorage.removeItem('game2048_user');
+    // Clear game state so a new game starts
+    localStorage.removeItem('gameState');
     this.updateUI();
+    // Reload page to restart game
+    window.location.reload();
   },
 
   // Check if logged in
@@ -110,15 +118,18 @@ const GameAPI = {
     const authSection = document.getElementById('auth-section');
     const userInfo = document.getElementById('user-info');
     const usernameDisplay = document.getElementById('username-display');
+    const loginWarning = document.getElementById('login-warning');
 
     if (authSection && userInfo) {
       if (this.isLoggedIn()) {
         authSection.style.display = 'none';
-        userInfo.style.display = 'block';
+        userInfo.style.display = 'flex';
         if (usernameDisplay) usernameDisplay.textContent = this.user.username;
+        if (loginWarning) loginWarning.classList.add('hidden');
       } else {
         authSection.style.display = 'block';
         userInfo.style.display = 'none';
+        if (loginWarning) loginWarning.classList.remove('hidden');
       }
     }
 

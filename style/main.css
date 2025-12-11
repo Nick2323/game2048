@@ -886,6 +886,20 @@ hr {
 .logout-btn:hover {
   background: #DC2193; }
 
+/* Login Warning */
+.login-warning {
+  background: #F4AE34;
+  color: #171A21;
+  padding: 10px 20px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-weight: bold;
+  display: block; }
+
+.login-warning.hidden {
+  display: none; }
+
 /* Leaderboard Styles */
 .leaderboard-section {
   background: #262D39;
