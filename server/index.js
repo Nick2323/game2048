@@ -32,9 +32,11 @@ async function startServer() {
     // Load routes after database is ready
     const authRoutes = require('./routes/auth');
     const gameRoutes = require('./routes/game');
+    const adminRoutes = require('./routes/admin');
 
     app.use('/api/auth', authRoutes);
     app.use('/api/game', gameRoutes);
+    app.use('/api/admin', adminRoutes);
 
     app.listen(PORT, () => {
       console.log(`
