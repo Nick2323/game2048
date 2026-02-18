@@ -7,6 +7,7 @@
   <link href="style/main.css" rel="stylesheet" type="text/css">
   <link rel="shortcut icon" href="favicon.ico">
   <link rel="apple-touch-icon" href="meta/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-startup-image" href="meta/apple-touch-startup-image-640x1096.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)"> <!-- iPhone 5+ -->
   <link rel="apple-touch-startup-image" href="meta/apple-touch-startup-image-640x920.png"  media="(device-width: 320px) and (device-height: 480px) and (-webkit-device-pixel-ratio: 2)"> <!-- iPhone, retina -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -63,6 +64,12 @@
         <span class="timer-label">Time:</span>
         <span id="timer" class="timer">1:00</span>
       </div>
+      <div class="grid-size-selector">
+        <button class="grid-size-btn" data-size="3" onclick="changeGridSize(3)">3x3</button>
+        <button class="grid-size-btn active" data-size="4" onclick="changeGridSize(4)">4x4</button>
+        <button class="grid-size-btn" data-size="5" onclick="changeGridSize(5)">5x5</button>
+        <button class="grid-size-btn" data-size="6" onclick="changeGridSize(6)">6x6</button>
+      </div>
       <a class="restart-button">New Game</a>
     </div>
 
@@ -76,35 +83,37 @@
       </div>
 
       <div class="grid-container">
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
+        <!-- Grid cells are dynamically generated -->
       </div>
 
       <div class="tile-container">
 
       </div>
+    </div>
+
+    <!-- Multiplayer Section -->
+    <div class="multiplayer-section">
+      <button id="find-game-btn" onclick="Multiplayer.findGame()" class="mp-find-btn" style="display:none;">
+        Find Multiplayer Game
+      </button>
+    </div>
+
+    <!-- Multiplayer Panel (shown during game) -->
+    <div id="multiplayer-panel" class="multiplayer-panel" style="display:none;">
+      <div class="mp-header">
+        <h3>Multiplayer</h3>
+        <button onclick="Multiplayer.leaveGame()" class="mp-leave-btn">Leave</button>
+      </div>
+      <div class="mp-opponent">
+        <span class="mp-label">Opponent:</span>
+        <span class="mp-opponent-score">Score: <strong id="opponent-score">0</strong></span>
+        <span class="mp-opponent-tile">Max: <strong id="opponent-max-tile">0</strong></span>
+      </div>
+      <div class="mp-timer-container">
+        <span class="mp-label">Time:</span>
+        <span id="mp-timer" class="mp-timer">1:00</span>
+      </div>
+      <div id="mp-status" class="mp-status"></div>
     </div>
 
     <!-- Leaderboard Section -->
@@ -127,6 +136,7 @@
   <script src="js/game_manager.js"></script>
   <script src="js/api.js"></script>
   <script src="js/application.js"></script>
+  <script src="js/multiplayer.js"></script>
 
   <script>
     // Auth UI handlers
@@ -166,6 +176,19 @@
 
     function handleLogout() {
       GameAPI.logout();
+    }
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('SW registered:', registration.scope);
+          })
+          .catch(error => {
+            console.log('SW registration failed:', error);
+          });
+      });
     }
   </script>
 </body>

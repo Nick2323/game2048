@@ -1,7 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
 const { initDatabase } = require('./db');
+const { setupMultiplayer } = require('./multiplayer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,7 +40,13 @@ async function startServer() {
     app.use('/api/game', gameRoutes);
     app.use('/api/admin', adminRoutes);
 
-    app.listen(PORT, () => {
+    // Create HTTP server
+    const server = http.createServer(app);
+
+    // Setup WebSocket for multiplayer
+    setupMultiplayer(server);
+
+    server.listen(PORT, () => {
       console.log(`
   ╔═══════════════════════════════════════════╗
   ║       2048 Game Server is running!        ║
@@ -55,6 +63,9 @@ async function startServer() {
   - GET  /api/game/leaderboard - Global leaderboard
   - GET  /api/game/daily-best  - Today's best scores
   - GET  /api/game/stats       - Statistics
+
+  Multiplayer:
+  - WebSocket: ws://localhost:${PORT}/ws
       `);
     });
   } catch (error) {

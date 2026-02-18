@@ -48,8 +48,11 @@ GameManager.prototype.setup = function () {
   // Reset result saved flag
   this.resultSaved = false;
 
+  // Set grid size in actuator
+  this.actuator.setGridSize(this.size);
+
   // Reload the game from a previous game if present
-  if (previousState && this.isUserLoggedIn()) {
+  if (previousState && this.isUserLoggedIn() && previousState.grid.size === this.size) {
     this.grid        = new Grid(previousState.grid.size,
                                 previousState.grid.cells); // Reload grid
     this.score       = previousState.score;
@@ -80,6 +83,14 @@ GameManager.prototype.setup = function () {
 
   // Update the actuator
   this.actuate();
+};
+
+// Change grid size (restarts game)
+GameManager.prototype.changeSize = function (newSize) {
+  this.size = newSize;
+  this.storageManager.clearGameState();
+  this.actuator.continueGame();
+  this.setup();
 };
 
 // Timer functions
@@ -206,12 +217,24 @@ GameManager.prototype.actuate = function () {
     this.storageManager.setBestScore(this.score);
   }
 
+  var maxTile = this.getMaxTile();
+
+  // Send multiplayer score update
+  if (typeof Multiplayer !== 'undefined' && Multiplayer.isInGame()) {
+    Multiplayer.sendScoreUpdate(this.score, maxTile);
+  }
+
   // Clear the state when the game is over (game over only, not win)
   if (this.over) {
     this.stopTimer();
     this.storageManager.clearGameState();
     // Save result to server when game is over
     this.saveResultToServer();
+
+    // Send game over to multiplayer
+    if (typeof Multiplayer !== 'undefined' && Multiplayer.isInGame()) {
+      Multiplayer.sendGameOver(this.score, maxTile);
+    }
   } else {
     this.storageManager.setGameState(this.serialize());
   }

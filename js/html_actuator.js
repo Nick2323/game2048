@@ -3,9 +3,47 @@ function HTMLActuator() {
   this.scoreContainer   = document.querySelector(".score-container");
   this.bestContainer    = document.querySelector(".best-container");
   this.messageContainer = document.querySelector(".game-message");
+  this.gridContainer    = document.querySelector(".grid-container");
 
   this.score = 0;
+  this.gridSize = 4;
+  this.containerSize = 470; // usable size inside game-container
+  this.gapSize = 15;
+  this.cellSize = 106.25;
+  this.positionStep = 121;
+  this.tileSize = 80;
 }
+
+// Set grid size and rebuild grid
+HTMLActuator.prototype.setGridSize = function (size) {
+  this.gridSize = size;
+  this.cellSize = (this.containerSize - (size - 1) * this.gapSize) / size;
+  this.positionStep = this.cellSize + this.gapSize;
+  // Tile is slightly smaller than cell
+  this.tileSize = this.cellSize - 26;
+  if (this.tileSize < 40) this.tileSize = 40;
+  this.buildGrid();
+};
+
+// Build grid cells dynamically
+HTMLActuator.prototype.buildGrid = function () {
+  this.clearContainer(this.gridContainer);
+
+  for (var y = 0; y < this.gridSize; y++) {
+    var row = document.createElement("div");
+    row.classList.add("grid-row");
+
+    for (var x = 0; x < this.gridSize; x++) {
+      var cell = document.createElement("div");
+      cell.classList.add("grid-cell");
+      cell.style.width = this.cellSize + "px";
+      cell.style.height = this.cellSize + "px";
+      row.appendChild(cell);
+    }
+
+    this.gridContainer.appendChild(row);
+  }
+};
 
 HTMLActuator.prototype.actuate = function (grid, metadata) {
   var self = this;
@@ -46,17 +84,39 @@ HTMLActuator.prototype.clearContainer = function (container) {
   }
 };
 
+// Calculate tile position in pixels
+HTMLActuator.prototype.calculatePosition = function (position) {
+  return {
+    x: position.x * this.positionStep,
+    y: position.y * this.positionStep
+  };
+};
+
 HTMLActuator.prototype.addTile = function (tile) {
   var self = this;
 
   var wrapper   = document.createElement("div");
   var inner     = document.createElement("div");
   var position  = tile.previousPosition || { x: tile.x, y: tile.y };
-  var positionClass = this.positionClass(position);
+  var pixelPos  = this.calculatePosition(position);
 
-  // We can't use classlist because it somehow glitches when replacing classes
-  var classes = ["tile", "tile-" + tile.value, positionClass];
+  // Set tile size based on grid
+  wrapper.style.width = this.tileSize + "px";
+  wrapper.style.height = this.tileSize + "px";
+  inner.style.width = this.tileSize + "px";
+  inner.style.height = this.tileSize + "px";
+  inner.style.lineHeight = this.tileSize + "px";
 
+  // Adjust font size for smaller tiles
+  var fontSize = this.tileSize * 0.55;
+  if (tile.value >= 100) fontSize = this.tileSize * 0.45;
+  if (tile.value >= 1000) fontSize = this.tileSize * 0.35;
+  inner.style.fontSize = fontSize + "px";
+
+  // Set position using transform
+  wrapper.style.transform = "translate(" + pixelPos.x + "px, " + pixelPos.y + "px)";
+
+  var classes = ["tile", "tile-" + tile.value];
   if (tile.value > 2048) classes.push("tile-super");
 
   this.applyClasses(wrapper, classes);
@@ -67,8 +127,8 @@ HTMLActuator.prototype.addTile = function (tile) {
   if (tile.previousPosition) {
     // Make sure that the tile gets rendered in the previous position first
     window.requestAnimationFrame(function () {
-      classes[2] = self.positionClass({ x: tile.x, y: tile.y });
-      self.applyClasses(wrapper, classes); // Update the position
+      var newPixelPos = self.calculatePosition({ x: tile.x, y: tile.y });
+      wrapper.style.transform = "translate(" + newPixelPos.x + "px, " + newPixelPos.y + "px)";
     });
   } else if (tile.mergedFrom) {
     classes.push("tile-merged");

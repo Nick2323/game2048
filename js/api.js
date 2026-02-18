@@ -119,6 +119,7 @@ const GameAPI = {
     const userInfo = document.getElementById('user-info');
     const usernameDisplay = document.getElementById('username-display');
     const loginWarning = document.getElementById('login-warning');
+    const findGameBtn = document.getElementById('find-game-btn');
 
     if (authSection && userInfo) {
       if (this.isLoggedIn()) {
@@ -126,10 +127,12 @@ const GameAPI = {
         userInfo.style.display = 'flex';
         if (usernameDisplay) usernameDisplay.textContent = this.user.username;
         if (loginWarning) loginWarning.classList.add('hidden');
+        if (findGameBtn) findGameBtn.style.display = 'block';
       } else {
         authSection.style.display = 'block';
         userInfo.style.display = 'none';
         if (loginWarning) loginWarning.classList.remove('hidden');
+        if (findGameBtn) findGameBtn.style.display = 'none';
       }
     }
 
