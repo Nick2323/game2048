@@ -107,6 +107,39 @@
     .btn-toggle:hover { background: #00ACC1; }
 
     .empty { color: #666; text-align: center; padding: 40px; }
+
+    .btn-edit {
+      padding: 5px 12px; border: none; border-radius: 4px;
+      background: #1976D2; color: #fff; cursor: pointer; font-size: 13px; margin-right: 6px;
+    }
+    .btn-edit:hover { background: #2196F3; }
+
+    /* MODAL */
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;
+    }
+    .modal.show { display: flex; }
+    .modal-box {
+      background: #0D3B66; border-radius: 10px; padding: 30px; width: 400px;
+    }
+    .modal-box h3 { color: #4DD0E1; margin-bottom: 20px; }
+    .modal-box label { display: block; color: #888; font-size: 13px; margin-bottom: 6px; }
+    .modal-box input {
+      width: 100%; padding: 12px; margin-bottom: 16px;
+      border: none; border-radius: 6px;
+      background: #0A1628; color: #fff; font-size: 15px;
+    }
+    .modal-buttons { display: flex; gap: 10px; margin-top: 10px; }
+    .modal-buttons button {
+      flex: 1; padding: 12px; border: none; border-radius: 6px;
+      font-size: 14px; cursor: pointer;
+    }
+    .btn-save { background: #00ACC1; color: #fff; }
+    .btn-save:hover { background: #26C6DA; }
+    .btn-cancel { background: #455A64; color: #fff; }
+    .btn-cancel:hover { background: #607D8B; }
+    .modal-error { color: #f44; font-size: 13px; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -180,6 +213,23 @@
       </table>
     </div>
 
+  </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div class="modal" id="editModal">
+  <div class="modal-box">
+    <h3>Edit User</h3>
+    <input type="hidden" id="editUserId" />
+    <label>Username</label>
+    <input type="text" id="editUsername" placeholder="Username" />
+    <label>Email</label>
+    <input type="email" id="editEmail" placeholder="Email" />
+    <div class="modal-error" id="editError"></div>
+    <div class="modal-buttons">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-save" onclick="saveUser()">Save</button>
+    </div>
   </div>
 </div>
 
@@ -278,6 +328,7 @@
         <td>${u.best_score || 0}</td>
         <td>${new Date(u.created_at).toLocaleDateString()}</td>
         <td>
+          <button class="btn-edit" onclick="editUser(${u.id}, '${u.username}', '${u.email}')">Edit</button>
           <button class="btn-toggle" onclick="toggleAdmin(${u.id})">${u.is_admin ? 'Remove Admin' : 'Make Admin'}</button>
           <button class="btn-del" onclick="deleteUser(${u.id}, '${u.username}')">Delete</button>
         </td>
@@ -322,6 +373,50 @@
     await fetch(`${API}/admin/users/${id}/toggle-admin`, { method: 'PATCH', headers: headers() });
     loadUsers();
   }
+
+  // Edit user modal
+  function editUser(id, username, email) {
+    document.getElementById('editUserId').value = id;
+    document.getElementById('editUsername').value = username;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editError').textContent = '';
+    document.getElementById('editModal').classList.add('show');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+  }
+
+  async function saveUser() {
+    const id = document.getElementById('editUserId').value;
+    const username = document.getElementById('editUsername').value;
+    const email = document.getElementById('editEmail').value;
+    const errEl = document.getElementById('editError');
+
+    if (!username || !email) {
+      errEl.textContent = 'Username and email are required';
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/admin/users/${id}`, {
+        method: 'PUT',
+        headers: headers(),
+        body: JSON.stringify({ username, email })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      closeEditModal();
+      loadUsers();
+    } catch (e) {
+      errEl.textContent = e.message;
+    }
+  }
+
+  // Close modal on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeEditModal();
+  });
 
   // Login on Enter key
   document.addEventListener('keydown', e => {

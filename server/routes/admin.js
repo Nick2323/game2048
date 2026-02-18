@@ -87,6 +87,29 @@ router.patch('/users/:id/toggle-admin', adminMiddleware, (req, res) => {
   }
 });
 
+// PUT /api/admin/users/:id - edit user
+router.put('/users/:id', adminMiddleware, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, email } = req.body;
+
+    if (!username || !email) {
+      return res.status(400).json({ error: 'Username and email are required' });
+    }
+
+    // Check if username/email already taken by another user
+    const existing = prepare('SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ?').get(username, email, id);
+    if (existing) {
+      return res.status(400).json({ error: 'Username or email already taken' });
+    }
+
+    prepare('UPDATE users SET username = ?, email = ? WHERE id = ?').run(username, email, id);
+    res.json({ message: 'User updated' });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/admin/results - all game results
 router.get('/results', adminMiddleware, (req, res) => {
   try {
