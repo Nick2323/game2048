@@ -101,12 +101,33 @@ var Multiplayer = (function() {
   }
 
   function findGame() {
-    if (!authenticated) {
-      showStatus('Please login first', 'error');
+    // Connect first if not connected
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      showStatus('Connecting...', 'searching');
+      showMultiplayerPanel();
+      connect().then(function() {
+        // Wait for authentication
+        setTimeout(function() {
+          if (authenticated) {
+            var gridSize = typeof getStoredGridSize === 'function' ? getStoredGridSize() : 4;
+            ws.send(JSON.stringify({ type: 'find_game', gridSize: gridSize }));
+            showStatus('Finding game...', 'searching');
+          } else {
+            showStatus('Authentication failed. Please refresh and try again.', 'error');
+          }
+        }, 500);
+      }).catch(function(err) {
+        showStatus('Connection failed: ' + err, 'error');
+      });
       return;
     }
 
-    var gridSize = getStoredGridSize ? getStoredGridSize() : 4;
+    if (!authenticated) {
+      showStatus('Please wait, authenticating...', 'waiting');
+      return;
+    }
+
+    var gridSize = typeof getStoredGridSize === 'function' ? getStoredGridSize() : 4;
     ws.send(JSON.stringify({ type: 'find_game', gridSize: gridSize }));
     showStatus('Finding game...', 'searching');
     showMultiplayerPanel();
